@@ -19,6 +19,10 @@ export type ProjectPageHeader_stats$data = {
   readonly tokenCountCompletion: number;
   readonly tokenCountPrompt: number;
   readonly tokenCountTotal: number;
+  readonly support: number;
+  readonly recall: number;
+  readonly precision: number;
+  readonly f1Score: number;
   readonly traceCount: number;
   readonly " $fragmentType": "ProjectPageHeader_stats";
 };

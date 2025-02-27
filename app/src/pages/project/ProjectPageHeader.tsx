@@ -42,6 +42,22 @@ export function ProjectPageHeader(props: {
           probability: 0.99
           timeRange: $timeRange
         )
+        f1Score: classificationMetric(
+          metric: F1
+          timeRange: $timeRange
+        )
+        precision: classificationMetric(
+          metric: PRECISION
+          timeRange: $timeRange
+        )
+        recall: classificationMetric(
+          metric: RECALL
+          timeRange: $timeRange
+        )
+        support: classificationMetric(
+          metric: SUPPORT
+          timeRange: $timeRange
+        )
         spanAnnotationNames
         documentEvaluationNames
       }
@@ -49,7 +65,7 @@ export function ProjectPageHeader(props: {
     props.project
   );
 
-  // Refetch the count of traces if the fetchKey changes
+  // Refetch when experimentId changes
   useEffect(() => {
     startTransition(() => {
       refetch({}, { fetchPolicy: "store-and-network" });
@@ -63,6 +79,10 @@ export function ProjectPageHeader(props: {
   const tokenCountCompletion = data?.tokenCountCompletion;
   const spanAnnotationNames = data?.spanAnnotationNames;
   const documentEvaluationNames = data?.documentEvaluationNames;
+  const f1Score = data?.f1Score;
+  const precision = data?.precision;
+  const recall = data?.recall;
+  const support = data?.support;
 
   return (
     <View
@@ -180,6 +200,47 @@ export function ProjectPageHeader(props: {
                 <Text size="L">--</Text>
               )}
             </Flex>
+            <Flex direction="column" flex="none">
+              <Text elementType="h3" size="S" color="text-700">
+                Precision
+              </Text>
+              {precision != null ? (
+                <Text size="L">{(precision * 100).toFixed(1)}%</Text>
+              ) : (
+                <Text size="L">--</Text>
+              )}
+            </Flex>
+            <Flex direction="column" flex="none">
+              <Text elementType="h3" size="S" color="text-700">
+                Recall
+              </Text>
+              {recall != null ? (
+                <Text size="L">{(recall * 100).toFixed(1)}%</Text>
+              ) : (
+                <Text size="L">--</Text>
+              )}
+            </Flex>
+            <Flex direction="column" flex="none">
+              <Text elementType="h3" size="S" color="text-700">
+                F1 Score
+              </Text>
+              {f1Score != null ? (
+                <Text size="L">{(f1Score * 100).toFixed(1)}%</Text>
+              ) : (
+                <Text size="L">--</Text>
+              )}
+            </Flex>
+            <Flex direction="column" flex="none">
+              <Text elementType="h3" size="S" color="text-700">
+                Support
+              </Text>
+              {support != null ? (
+                <Text size="L">{support.toLocaleString()}</Text>
+              ) : (
+                <Text size="L">--</Text>
+              )}
+            </Flex>
+            
             {spanAnnotationNames.map((name) => (
               <AnnotationSummary key={name} annotationName={name} />
             ))}

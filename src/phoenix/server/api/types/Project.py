@@ -1,5 +1,6 @@
 import operator
 from datetime import datetime
+from enum import Enum
 from typing import Any, ClassVar, Optional
 
 import strawberry
@@ -31,12 +32,23 @@ from phoenix.server.api.types.pagination import (
     CursorString,
     connection_from_cursors_and_nodes,
 )
-from phoenix.server.api.types.ProjectSession import ProjectSession, to_gql_project_session
+from phoenix.server.api.types.ProjectSession import (
+    ProjectSession,
+    to_gql_project_session,
+)
 from phoenix.server.api.types.SortDir import SortDir
 from phoenix.server.api.types.Span import Span, to_gql_span
 from phoenix.server.api.types.Trace import Trace, to_gql_trace
 from phoenix.server.api.types.ValidationResult import ValidationResult
 from phoenix.trace.dsl import SpanFilter
+
+
+@strawberry.enum
+class MetricType(Enum):
+    PRECISION = "precision"
+    RECALL = "recall"
+    F1 = "f1"
+    SUPPORT = "support"
 
 
 @strawberry.type
@@ -159,6 +171,19 @@ class Project(Node):
         )
 
     @strawberry.field
+    async def classification_metric(
+        self,
+        info: Info[Context, None],
+        metric: MetricType,
+        time_range: Optional[TimeRange] = UNSET,
+        filter_condition: Optional[str] = UNSET,
+    ) -> Optional[float]:
+        """Get classification metrics (precision, recall, f1, support) for project experiments."""
+        return await info.context.data_loaders.classification_metrics.load(
+            (self.id_attr, time_range, filter_condition, metric.value)
+        )
+
+    @strawberry.field
     async def trace(self, trace_id: ID, info: Info[Context, None]) -> Optional[Trace]:
         stmt = (
             select(models.Trace)
@@ -218,7 +243,9 @@ class Project(Node):
             cursor = Cursor.from_string(after)
             if sort_config and cursor.sort_column:
                 sort_column = cursor.sort_column
-                compare = operator.lt if sort_config.dir is SortDir.desc else operator.gt
+                compare = (
+                    operator.lt if sort_config.dir is SortDir.desc else operator.gt
+                )
                 stmt = stmt.where(
                     compare(
                         tuple_(sort_config.orm_expression, models.Span.id),
@@ -308,7 +335,9 @@ class Project(Node):
                     sort_subq = (
                         select(
                             models.Trace.project_session_rowid.label("id"),
-                            func.sum(models.Span.cumulative_llm_token_count_total).label("key"),
+                            func.sum(
+                                models.Span.cumulative_llm_token_count_total
+                            ).label("key"),
                         )
                         .join_from(models.Trace, models.Span)
                         .where(models.Span.parent_id.is_(None))
@@ -363,7 +392,9 @@ class Project(Node):
                         type=sort.col.data_type,
                         value=record[1],
                     )
-                cursors_and_nodes.append((cursor, to_gql_project_session(project_session)))
+                cursors_and_nodes.append(
+                    (cursor, to_gql_project_session(project_session))
+                )
             has_next_page = True
             try:
                 await records.__anext__()

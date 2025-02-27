@@ -11,15 +11,7 @@ from datetime import datetime, timedelta, timezone
 from functools import cached_property
 from pathlib import Path
 from types import MethodType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    NamedTuple,
-    Optional,
-    TypedDict,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional, TypedDict, Union, cast
 from urllib.parse import urlparse
 
 import strawberry
@@ -73,6 +65,7 @@ from phoenix.server.api.dataloaders import (
     AnnotationSummaryDataLoader,
     AverageExperimentRunLatencyDataLoader,
     CacheForDataLoaders,
+    ClassificationMetricsDataLoader,
     DatasetExampleRevisionsDataLoader,
     DatasetExampleSpansDataLoader,
     DocumentEvaluationsDataLoader,
@@ -178,7 +171,9 @@ def import_object_from_file(file_path: str, object_name: str) -> Any:
         try:
             return getattr(module, object_name)
         except AttributeError:
-            raise ImportError(f"Module '{file_path}' does not have an object '{object_name}'.")
+            raise ImportError(
+                f"Module '{file_path}' does not have an object '{object_name}'."
+            )
     except Exception as e:
         raise ImportError(f"Could not import '{object_name}' from '{file_path}': {e}")
 
@@ -243,7 +238,9 @@ class Static(StaticFiles):
                     "min_dist": self._app_config.min_dist,
                     "n_neighbors": self._app_config.n_neighbors,
                     "n_samples": self._app_config.n_samples,
-                    "basename": self._sanitize_basename(request.scope.get("root_path", "")),
+                    "basename": self._sanitize_basename(
+                        request.scope.get("root_path", "")
+                    ),
                     "platform_version": phoenix_version,
                     "request": request,
                     "is_development": self._app_config.is_development,
@@ -297,7 +294,9 @@ def user_fastapi_middlewares() -> list[Middleware]:
     for file_path, object_name in paths:
         middleware_class = import_object_from_file(file_path, object_name)
         if not issubclass(middleware_class, BaseHTTPMiddleware):
-            raise TypeError(f"{middleware_class} is not a subclass of BaseHTTPMiddleware")
+            raise TypeError(
+                f"{middleware_class} is not a subclass of BaseHTTPMiddleware"
+            )
         middlewares.append(Middleware(middleware_class))
     return middlewares
 
@@ -319,7 +318,9 @@ def user_grpc_interceptors() -> list[ServerInterceptor]:
     for file_path, object_name in paths:
         interceptor_class = import_object_from_file(file_path, object_name)
         if not issubclass(interceptor_class, ServerInterceptor):
-            raise TypeError(f"{interceptor_class} is not a subclass of ServerInterceptor")
+            raise TypeError(
+                f"{interceptor_class} is not a subclass of ServerInterceptor"
+            )
         interceptors.append(interceptor_class)
     return interceptors
 
@@ -371,7 +372,8 @@ class Scaffolder(DaemonTask):
         self._queue_span = queue_span
         self._queue_evaluation = queue_evaluation
         self._tracing_fixtures = [
-            get_trace_fixture_by_name(name) for name in set(config.tracing_fixture_names)
+            get_trace_fixture_by_name(name)
+            for name in set(config.tracing_fixture_names)
         ]
         self._force_fixture_ingestion = config.force_fixture_ingestion
         self._scaffold_datasets = config.scaffold_datasets
@@ -400,7 +402,9 @@ class Scaffolder(DaemonTask):
 
         async with self._db() as session:
             created_at = await session.scalar(
-                select(models.Project.created_at).where(models.Project.name == "default")
+                select(models.Project.created_at).where(
+                    models.Project.name == "default"
+                )
             )
         if created_at is None:
             return False
@@ -419,7 +423,9 @@ class Scaffolder(DaemonTask):
         loop = asyncio.get_running_loop()
         for fixture in self._tracing_fixtures:
             try:
-                trace_ds = await loop.run_in_executor(None, load_example_traces, fixture.name)
+                trace_ds = await loop.run_in_executor(
+                    None, load_example_traces, fixture.name
+                )
 
                 fixture_spans, fixture_evals = await loop.run_in_executor(
                     None,
@@ -449,12 +455,16 @@ class Scaffolder(DaemonTask):
             except ValueError as e:
                 logger.error(f"Error processing fixture '{fixture.name}': {e}")
             except Exception as e:
-                logger.error(f"Unexpected error processing fixture '{fixture.name}': {e}")
+                logger.error(
+                    f"Unexpected error processing fixture '{fixture.name}': {e}"
+                )
 
     async def _handle_dataset_fixtures(self, fixture: TracesFixture) -> None:
         loop = asyncio.get_running_loop()
         try:
-            dataset_fixtures = await loop.run_in_executor(None, get_dataset_fixtures, fixture.name)
+            dataset_fixtures = await loop.run_in_executor(
+                None, get_dataset_fixtures, fixture.name
+            )
             await loop.run_in_executor(
                 None,
                 send_dataset_fixtures,
@@ -573,7 +583,9 @@ def create_graphql_router(
             last_updated_at=last_updated_at,
             event_queue=event_queue,
             data_loaders=DataLoaders(
-                average_experiment_run_latency=AverageExperimentRunLatencyDataLoader(db),
+                average_experiment_run_latency=AverageExperimentRunLatencyDataLoader(
+                    db
+                ),
                 dataset_example_revisions=DatasetExampleRevisionsDataLoader(db),
                 dataset_example_spans=DatasetExampleSpansDataLoader(db),
                 document_evaluation_summaries=DocumentEvaluationSummaryDataLoader(
@@ -589,10 +601,14 @@ def create_graphql_router(
                 annotation_summaries=AnnotationSummaryDataLoader(
                     db,
                     cache_map=(
-                        cache_for_dataloaders.annotation_summary if cache_for_dataloaders else None
+                        cache_for_dataloaders.annotation_summary
+                        if cache_for_dataloaders
+                        else None
                     ),
                 ),
-                experiment_annotation_summaries=ExperimentAnnotationSummaryDataLoader(db),
+                experiment_annotation_summaries=ExperimentAnnotationSummaryDataLoader(
+                    db
+                ),
                 experiment_error_rates=ExperimentErrorRatesDataLoader(db),
                 experiment_run_annotations=ExperimentRunAnnotations(db),
                 experiment_run_counts=ExperimentRunCountsDataLoader(db),
@@ -600,7 +616,9 @@ def create_graphql_router(
                 latency_ms_quantile=LatencyMsQuantileDataLoader(
                     db,
                     cache_map=(
-                        cache_for_dataloaders.latency_ms_quantile if cache_for_dataloaders else None
+                        cache_for_dataloaders.latency_ms_quantile
+                        if cache_for_dataloaders
+                        else None
                     ),
                 ),
                 min_start_or_max_end_times=MinStartOrMaxEndTimeDataLoader(
@@ -613,27 +631,42 @@ def create_graphql_router(
                 ),
                 record_counts=RecordCountDataLoader(
                     db,
-                    cache_map=cache_for_dataloaders.record_count if cache_for_dataloaders else None,
+                    cache_map=(
+                        cache_for_dataloaders.record_count
+                        if cache_for_dataloaders
+                        else None
+                    ),
                 ),
                 session_first_inputs=SessionIODataLoader(db, "first_input"),
                 session_last_outputs=SessionIODataLoader(db, "last_output"),
                 session_num_traces=SessionNumTracesDataLoader(db),
                 session_num_traces_with_error=SessionNumTracesWithErrorDataLoader(db),
                 session_token_usages=SessionTokenUsagesDataLoader(db),
-                session_trace_latency_ms_quantile=SessionTraceLatencyMsQuantileDataLoader(db),
+                session_trace_latency_ms_quantile=SessionTraceLatencyMsQuantileDataLoader(
+                    db
+                ),
                 span_annotations=SpanAnnotationsDataLoader(db),
                 span_dataset_examples=SpanDatasetExamplesDataLoader(db),
                 span_descendants=SpanDescendantsDataLoader(db),
                 span_projects=SpanProjectsDataLoader(db),
                 token_counts=TokenCountDataLoader(
                     db,
-                    cache_map=cache_for_dataloaders.token_count if cache_for_dataloaders else None,
+                    cache_map=(
+                        cache_for_dataloaders.token_count
+                        if cache_for_dataloaders
+                        else None
+                    ),
                 ),
                 trace_by_trace_ids=TraceByTraceIdsDataLoader(db),
                 trace_root_spans=TraceRootSpansDataLoader(db),
                 project_by_name=ProjectByNameDataLoader(db),
                 users=UsersDataLoader(db),
                 user_roles=UserRolesDataLoader(db),
+                # Adicione o novo dataloader aqui
+                classification_metrics=ClassificationMetricsDataLoader(
+                    db,
+                    cache_map=None,
+                ),
             ),
             cache_for_dataloaders=cache_for_dataloaders,
             read_only=read_only,
@@ -657,7 +690,9 @@ def create_engine_and_run_migrations(
     database_url: str,
 ) -> AsyncEngine:
     try:
-        return create_engine(connection_str=database_url, migrate=True, log_to_stdout=False)
+        return create_engine(
+            connection_str=database_url, migrate=True, log_to_stdout=False
+        )
     except PhoenixMigrationError as e:
         msg = (
             "\n\n⚠️⚠️ Phoenix failed to migrate the database to the latest version. ⚠️⚠️\n\n"
@@ -688,7 +723,9 @@ def instrument_engine_if_enabled(engine: AsyncEngine) -> list[Callable[[], None]
     return instrumentation_cleanups
 
 
-async def plain_text_http_exception_handler(request: Request, exc: HTTPException) -> Response:
+async def plain_text_http_exception_handler(
+    request: Request, exc: HTTPException
+) -> Response:
     """
     Overrides the default handler for HTTPExceptions to return a plain text
     response instead of a JSON response. For the original source code, see
@@ -697,10 +734,14 @@ async def plain_text_http_exception_handler(request: Request, exc: HTTPException
     headers = getattr(exc, "headers", None)
     if not is_body_allowed_for_status_code(exc.status_code):
         return Response(status_code=exc.status_code, headers=headers)
-    return PlainTextResponse(str(exc.detail), status_code=exc.status_code, headers=headers)
+    return PlainTextResponse(
+        str(exc.detail), status_code=exc.status_code, headers=headers
+    )
 
 
-async def websocket_denial_response_handler(websocket: WebSocket, exc: WebSocketException) -> None:
+async def websocket_denial_response_handler(
+    websocket: WebSocket, exc: WebSocketException
+) -> None:
     """
     Overrides the default exception handler for WebSocketException to ensure
     that the HTTP response returned when a WebSocket connection is denied has
@@ -720,7 +761,9 @@ async def websocket_denial_response_handler(websocket: WebSocket, exc: WebSocket
     - https://asgi.readthedocs.io/en/latest/extensions.html#websocket-denial-response
     """
     assert isinstance(exc, WebSocketException)
-    await websocket.send_denial_response(JSONResponse(status_code=exc.code, content=exc.reason))
+    await websocket.send_denial_response(
+        JSONResponse(status_code=exc.code, content=exc.reason)
+    )
 
 
 def create_app(
@@ -771,7 +814,9 @@ def create_app(
             for item in initial_spans
         )
     )
-    initial_batch_of_evaluations = () if initial_evaluations is None else initial_evaluations
+    initial_batch_of_evaluations = (
+        () if initial_evaluations is None else initial_evaluations
+    )
     cache_for_dataloaders = (
         CacheForDataLoaders() if db.dialect is SupportedSQLDialect.SQLITE else None
     )
@@ -834,7 +879,9 @@ def create_app(
                 # Monkey-patch its private tracer to eliminate usage of the global
                 # TracerProvider, which in a notebook setting could be the one
                 # used by OpenInference.
-                self._tracer = cast(TracerProvider, tracer_provider).get_tracer("strawberry")
+                self._tracer = cast(TracerProvider, tracer_provider).get_tracer(
+                    "strawberry"
+                )
 
         graphql_schema_extensions.append(_OpenTelemetryExtension)
 
@@ -949,7 +996,9 @@ def _add_get_secret_method(*, app: FastAPI, secret: Optional[str]) -> FastAPI:
     return app
 
 
-def _add_get_token_store_method(*, app: FastAPI, token_store: Optional[JwtStore]) -> FastAPI:
+def _add_get_token_store_method(
+    *, app: FastAPI, token_store: Optional[JwtStore]
+) -> FastAPI:
     """
     Dynamically adds a `get_token_store` method to the app's `state`.
     """

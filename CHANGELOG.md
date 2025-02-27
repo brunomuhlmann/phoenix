@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+### Added
+- New dataloader for classification metrics (precision, recall, f1, support)
+
+### Changed
+- Updated the `ProjectPageHeader` component to display classification metrics
+- Updated the `ProjectPage` component for compatibility
+- Updated the `schema.graphql` file to include the classification metrics
+- Some small changes for compatibility
+
+## Forked (2025-02-27)
+
 ## [7.9.3](https://github.com/Arize-ai/phoenix/compare/arize-phoenix-v7.9.2...arize-phoenix-v7.9.3) (2025-01-30)
 
 

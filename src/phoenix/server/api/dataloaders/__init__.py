@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from .annotation_summaries import AnnotationSummaryCache, AnnotationSummaryDataLoader
 from .average_experiment_run_latency import AverageExperimentRunLatencyDataLoader
+from .classification_metrics import ClassificationMetricsDataLoader
 from .dataset_example_revisions import DatasetExampleRevisionsDataLoader
 from .dataset_example_spans import DatasetExampleSpansDataLoader
 from .document_evaluation_summaries import (
@@ -16,7 +17,10 @@ from .experiment_run_annotations import ExperimentRunAnnotations
 from .experiment_run_counts import ExperimentRunCountsDataLoader
 from .experiment_sequence_number import ExperimentSequenceNumberDataLoader
 from .latency_ms_quantile import LatencyMsQuantileCache, LatencyMsQuantileDataLoader
-from .min_start_or_max_end_times import MinStartOrMaxEndTimeCache, MinStartOrMaxEndTimeDataLoader
+from .min_start_or_max_end_times import (
+    MinStartOrMaxEndTimeCache,
+    MinStartOrMaxEndTimeDataLoader,
+)
 from .project_by_name import ProjectByNameDataLoader
 from .record_counts import RecordCountCache, RecordCountDataLoader
 from .session_io import SessionIODataLoader
@@ -37,6 +41,7 @@ from .users import UsersDataLoader
 __all__ = [
     "CacheForDataLoaders",
     "AverageExperimentRunLatencyDataLoader",
+    "ClassificationMetricsDataLoader",
     "DatasetExampleRevisionsDataLoader",
     "DatasetExampleSpansDataLoader",
     "DocumentEvaluationSummaryDataLoader",

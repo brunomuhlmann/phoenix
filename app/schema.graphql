@@ -1266,6 +1266,13 @@ type Point3D {
   z: Float!
 }
 
+enum MetricType {
+  PRECISION
+  RECALL
+  F1
+  SUPPORT
+}
+
 type Project implements Node {
   """The Globally Unique ID of this object"""
   id: GlobalID!
@@ -1276,6 +1283,16 @@ type Project implements Node {
   endTime: DateTime
   recordCount(timeRange: TimeRange, filterCondition: String): Int!
   traceCount(timeRange: TimeRange): Int!
+
+  """
+  Get classification metrics (precision, recall, f1, support) for an experiment.
+  """
+  classificationMetric(
+    metric: MetricType!
+    timeRange: TimeRange
+    filterCondition: String
+  ): Float
+  
   tokenCountTotal(timeRange: TimeRange, filterCondition: String): Int!
   tokenCountPrompt(timeRange: TimeRange, filterCondition: String): Int!
   tokenCountCompletion(timeRange: TimeRange, filterCondition: String): Int!

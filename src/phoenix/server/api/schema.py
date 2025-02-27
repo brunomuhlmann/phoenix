@@ -12,10 +12,13 @@ from phoenix.server.api.subscriptions import Subscription
 from phoenix.server.api.types.ChatCompletionSubscriptionPayload import (
     ChatCompletionSubscriptionPayload,
 )
+from phoenix.server.api.types.Project import MetricType
 
 
 def build_graphql_schema(
-    extensions: Optional[Iterable[Union[type[SchemaExtension], SchemaExtension]]] = None,
+    extensions: Optional[
+        Iterable[Union[type[SchemaExtension], SchemaExtension]]
+    ] = None,
 ) -> strawberry.Schema:
     """
     Builds a strawberry schema.
@@ -25,7 +28,7 @@ def build_graphql_schema(
         mutation=Mutation,
         extensions=list(chain(extensions or [], [get_mask_errors_extension()])),
         subscription=Subscription,
-        types=_implementing_types(ChatCompletionSubscriptionPayload),
+        types=[MetricType, *_implementing_types(ChatCompletionSubscriptionPayload)],
     )
 
 
@@ -46,4 +49,6 @@ def _implementing_types(interface: Any) -> Iterator[StrawberryType]:
             yield subcls
 
 
-_EXPORTED_GRAPHQL_SCHEMA = build_graphql_schema()  # used to export the GraphQL schema to file
+_EXPORTED_GRAPHQL_SCHEMA = (
+    build_graphql_schema()
+)  # used to export the GraphQL schema to file

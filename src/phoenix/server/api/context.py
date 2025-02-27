@@ -8,15 +8,14 @@ from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response as StarletteResponse
 from strawberry.fastapi import BaseContext
 
-from phoenix.auth import (
-    compute_password_hash,
-)
+from phoenix.auth import compute_password_hash
 from phoenix.core.model_schema import Model
 from phoenix.db import models
 from phoenix.server.api.dataloaders import (
     AnnotationSummaryDataLoader,
     AverageExperimentRunLatencyDataLoader,
     CacheForDataLoaders,
+    ClassificationMetricsDataLoader,
     DatasetExampleRevisionsDataLoader,
     DatasetExampleSpansDataLoader,
     DocumentEvaluationsDataLoader,
@@ -90,6 +89,7 @@ class DataLoaders:
     project_by_name: ProjectByNameDataLoader
     users: UsersDataLoader
     user_roles: UserRolesDataLoader
+    classification_metrics: ClassificationMetricsDataLoader
 
 
 class _NoOp:

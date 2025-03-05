@@ -808,6 +808,14 @@ type Experiment implements Node {
   """Sequence number (1-based) of experiments belonging to the same dataset"""
   sequenceNumber: Int!
   runs(first: Int = 50, last: Int, after: String, before: String): ExperimentRunConnection!
+
+  """
+  Get classification metrics (precision, recall, f1, support) for an experiment.
+  """
+  classificationMetric(
+    metric: MetricType!
+  ): Float
+
   runCount: Int!
   annotationSummaries: [ExperimentAnnotationSummary!]!
   errorRate: Float

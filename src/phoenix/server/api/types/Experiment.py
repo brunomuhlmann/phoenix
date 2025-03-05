@@ -11,14 +11,16 @@ from strawberry.types import Info
 
 from phoenix.db import models
 from phoenix.server.api.context import Context
-from phoenix.server.api.types.ExperimentAnnotationSummary import ExperimentAnnotationSummary
+from phoenix.server.api.types.ExperimentAnnotationSummary import (
+    ExperimentAnnotationSummary,
+)
 from phoenix.server.api.types.ExperimentRun import ExperimentRun, to_gql_experiment_run
 from phoenix.server.api.types.pagination import (
     ConnectionArgs,
     CursorString,
     connection_from_list,
 )
-from phoenix.server.api.types.Project import Project
+from phoenix.server.api.types.Project import MetricType, Project
 
 
 @strawberry.type
@@ -41,7 +43,9 @@ class Experiment(Node):
         info: Info[Context, None],
     ) -> int:
         if self.cached_sequence_number is None:
-            seq_num = await info.context.data_loaders.experiment_sequence_number.load(self.id_attr)
+            seq_num = await info.context.data_loaders.experiment_sequence_number.load(
+                self.id_attr
+            )
             if seq_num is None:
                 raise ValueError(f"invalid experiment: id={self.id_attr}")
             self.cached_sequence_number = seq_num
@@ -70,11 +74,38 @@ class Experiment(Node):
                     .where(models.ExperimentRun.experiment_id == experiment_id)
                     .order_by(models.ExperimentRun.id.desc())
                     .options(
-                        joinedload(models.ExperimentRun.trace).load_only(models.Trace.trace_id)
+                        joinedload(models.ExperimentRun.trace).load_only(
+                            models.Trace.trace_id
+                        )
                     )
                 )
             ).all()
         return connection_from_list([to_gql_experiment_run(run) for run in runs], args)
+
+    @strawberry.field
+    async def classification_metric(
+        self,
+        info: Info[Context, None],
+        metric: MetricType,
+    ) -> Optional[float]:
+        """Get classification metrics (precision, recall, f1, support) for experiment."""
+        # Primeiro obter o project_id associado a este experimento
+        project_id = None
+        if self.project_name:
+            project = await info.context.data_loaders.project_by_name.load(
+                self.project_name
+            )
+            if project:
+                project_id = project.id
+
+        # Se não conseguirmos um project_id, retornar None
+        if project_id is None:
+            return None
+
+        # Usar o project_id para carregar as métricas de classificação
+        return await info.context.data_loaders.classification_metrics.load(
+            (project_id, None, None, metric.value)
+        )
 
     @strawberry.field
     async def run_count(self, info: Info[Context, None]) -> int:
@@ -105,9 +136,13 @@ class Experiment(Node):
         return await info.context.data_loaders.experiment_error_rates.load(self.id_attr)
 
     @strawberry.field
-    async def average_run_latency_ms(self, info: Info[Context, None]) -> Optional[float]:
-        latency_seconds = await info.context.data_loaders.average_experiment_run_latency.load(
-            self.id_attr
+    async def average_run_latency_ms(
+        self, info: Info[Context, None]
+    ) -> Optional[float]:
+        latency_seconds = (
+            await info.context.data_loaders.average_experiment_run_latency.load(
+                self.id_attr
+            )
         )
         return latency_seconds * 1000 if latency_seconds is not None else None
 
@@ -116,7 +151,9 @@ class Experiment(Node):
         if self.project_name is None:
             return None
 
-        db_project = await info.context.data_loaders.project_by_name.load(self.project_name)
+        db_project = await info.context.data_loaders.project_by_name.load(
+            self.project_name
+        )
 
         if db_project is None:
             return None

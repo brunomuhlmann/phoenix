@@ -67,6 +67,18 @@ export function ExperimentsTableEmpty() {
   );
 }
 
+export function getColor(value: number) {
+  if (value < 0.60) return "red";
+  if (value < 0.65) return "orangered";
+  if (value < 0.70) return "orange";
+  if (value < 0.75) return "gold";
+  if (value < 0.80) return "yellow";
+  if (value < 0.85) return "yellowgreen";
+  if (value < 0.90) return "limegreen";
+  if (value < 0.95) return "green";
+  return "darkgreen";
+}
+
 export function ExperimentsTable({
   dataset,
 }: {
@@ -98,6 +110,10 @@ export function ExperimentsTable({
                 description
                 createdAt
                 metadata
+                f1Score: classificationMetric(metric: F1)
+                precision: classificationMetric(metric: PRECISION)
+                recall: classificationMetric(metric: RECALL)
+                support: classificationMetric(metric: SUPPORT)
                 errorRate
                 runCount
                 averageRunLatencyMs
@@ -237,6 +253,119 @@ export function ExperimentsTable({
     });
 
   const tailColumns: ColumnDef<TableRow>[] = [
+    {
+      header: "F1 Score",
+      accessorKey: "f1Score",
+      meta: {
+        textAlign: "right",
+      },
+      cell: ({ getValue }) => {
+        const value = getValue();
+        const color = getColor(parseFloat(value as string));
+        if (value === null || typeof value !== "number") {
+          return <span css={css`float: right;`}>--</span>;
+        }
+        return <TriggerWrap>
+          <div
+            css={css`
+            float: right;
+            --mod-barloader-fill-color: ${color};
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: var(--ac-global-dimension-size-100);
+          `}
+          >
+            {(value * 100).toFixed(1)}%
+            <ProgressBar
+              width="40px"
+              value={value * 100}
+            />
+          </div>
+        </TriggerWrap>
+        // return <span css={css`float: right;`}>{(value * 100).toFixed(1)}%</span>;
+      }
+    },
+    {
+      header: "Precision",
+      accessorKey: "precision",
+      meta: {
+        textAlign: "right",
+      },
+      cell: ({ getValue }) => {
+        const value = getValue();
+        const color = getColor(parseFloat(value as string));
+        if (value === null || typeof value !== "number") {
+          return <span css={css`float: right;`}>--</span>;
+        }
+        return <TriggerWrap>
+          <div
+            css={css`
+            float: right;
+            --mod-barloader-fill-color: ${color};
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: var(--ac-global-dimension-size-100);
+          `}
+          >
+            {(value * 100).toFixed(1)}%
+            <ProgressBar
+              width="40px"
+              value={value * 100}
+            />
+          </div>
+        </TriggerWrap>
+        // return <span css={css`float: right;`}>{(value * 100).toFixed(1)}%</span>;
+      }
+    },
+    {
+      header: "Recall",
+      accessorKey: "recall",
+      meta: {
+        textAlign: "right",
+      },
+      cell: ({ getValue }) => {
+        const value = getValue();
+        const color = getColor(parseFloat(value as string));
+        if (value === null || typeof value !== "number") {
+          return <span css={css`float: right;`}>--</span>;
+        }
+        return <TriggerWrap>
+          <div
+            css={css`
+            float: right;
+            --mod-barloader-fill-color: ${color};
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: var(--ac-global-dimension-size-100);
+          `}
+          >
+            {(value * 100).toFixed(1)}%
+            <ProgressBar
+              width="40px"
+              value={value * 100}
+            />
+          </div>
+        </TriggerWrap>
+        // return <span css={css`float: right;`}>{(value * 100).toFixed(1)}%</span>;
+      }
+    },
+    {
+      header: "Support",
+      accessorKey: "support",
+      meta: {
+        textAlign: "right",
+      },
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (value === null || typeof value !== "number") {
+          return <span css={css`float: right;`}>--</span>;
+        }
+        return <span css={css`float: right;`}>{value.toLocaleString()}</span>;
+      }
+    },
     {
       header: "run count",
       accessorKey: "runCount",

@@ -9,6 +9,10 @@
 - Updated the `ProjectPage` component for compatibility
 - Updated the `schema.graphql` file to include the classification metrics
 - Some small changes for compatibility
+- Updated the `ExperimentsTable` component to display classification metrics
+- Updated the `schema.graphql` file to include the classification metrics in the `Experiment` type
+- Adapted the `Experiment` type to include classification metrics
+- Adapted the classification metrics dataloader to work with the `Experiment` type input
 
 ## Forked (2025-02-27)
 

@@ -28,20 +28,27 @@ MetricValue: TypeAlias = float
 Segment: TypeAlias = tuple[TimeInterval, FilterCondition]
 Param: TypeAlias = tuple[ProjectRowId, MetricType]
 
-Key: TypeAlias = tuple[ProjectRowId, Optional[TimeRange], FilterCondition, MetricType]
+Key: TypeAlias = tuple[
+    ProjectRowId, Optional[TimeRange], FilterCondition, MetricType, Optional[int]
+]
 Result: TypeAlias = Optional[MetricValue]
 ResultPosition: TypeAlias = int
 DEFAULT_VALUE: Result = None
 
 
 def _cache_key_fn(key: Key) -> tuple[Segment, Param]:
-    project_rowid, time_range, filter_condition, metric_type = key
+    # Ignorar o experiment_id por enquanto e manter compatibilidade
+    if len(key) == 5:
+        project_id, time_range, filter_condition, metric_type, _ = key
+    else:
+        project_id, time_range, filter_condition, metric_type = key
+
     interval = (
         (time_range.start, time_range.end)
         if isinstance(time_range, TimeRange)
         else (None, None)
     )
-    return (interval, filter_condition), (project_rowid, metric_type)
+    return (interval, filter_condition), (project_id, metric_type)
 
 
 _Section: TypeAlias = ProjectRowId
@@ -84,27 +91,59 @@ class ClassificationMetricsDataLoader(DataLoader[Key, Result]):
         ] = defaultdict(lambda: defaultdict(list))
 
         for position, key in enumerate(keys):
-            segment, param = _cache_key_fn(key)
+            if len(key) == 4:
+                # Formato antigo: (project_id, time_range, filter_condition, metric_type)
+                project_id, time_range, filter_condition, metric_type = key
+                experiment_id = None
+            else:
+                # Novo formato: (project_id, time_range, filter_condition, metric_type, experiment_id)
+                project_id, time_range, filter_condition, metric_type, experiment_id = (
+                    key
+                )
+
+            segment = (
+                (
+                    (time_range.start, time_range.end)
+                    if isinstance(time_range, TimeRange)
+                    else (None, None)
+                ),
+                filter_condition,
+            )
+            param = (project_id, cast(MetricType, metric_type), experiment_id)
             arguments[segment][param].append(position)
 
         async with self._db() as session:
             for segment, params in arguments.items():
-                # Group projects by metrics
-                project_ids = {project_id for (project_id, _) in params.keys()}
-
-                # Calculate metrics for each project
-                for project_id in project_ids:
-                    metrics = await self._calculate_classification_metrics(
-                        session, project_id, segment
+                # Agrupar parâmetros por experiment_id
+                by_experiment = defaultdict(list)
+                for (
+                    project_id,
+                    metric_type,
+                    experiment_id,
+                ), positions in params.items():
+                    by_experiment[(project_id, metric_type, experiment_id)].extend(
+                        positions
                     )
 
+                for (
+                    project_id,
+                    metric_type,
+                    experiment_id,
+                ), positions in by_experiment.items():
+                    # Se experiment_id for fornecido, calcular métricas para esse experimento específico
+                    if experiment_id is not None:
+                        metrics = await self._calculate_experiment_metrics(
+                            session, experiment_id, segment
+                        )
+                    else:
+                        # Caso contrário, usar a lógica existente para projetos
+                        metrics = await self._calculate_classification_metrics(
+                            session, project_id, segment
+                        )
+
                     if metrics:
-                        # Assign results to the correct positions
-                        for metric_type in ["precision", "recall", "f1", "support"]:
-                            for position in params.get(
-                                (project_id, cast(MetricType, metric_type)), []
-                            ):
-                                results[position] = metrics.get(metric_type)
+                        for position in positions:
+                            results[position] = metrics.get(metric_type)
 
         return results
 
@@ -182,6 +221,68 @@ class ClassificationMetricsDataLoader(DataLoader[Key, Result]):
         except:
             # Log the exception for debugging
             print(f"Error calculating classification metrics: {traceback.format_exc()}")
+            return None
+
+    async def _calculate_experiment_metrics(
+        self, session: Any, experiment_id: int, segment: Segment
+    ) -> Optional[Dict[str, float]]:
+        """Calculate classification metrics for a specific experiment."""
+        try:
+            # Obter os dados necessários para o cálculo da métrica
+            (start_time, end_time), filter_condition = segment
+
+            stmt = (
+                select(
+                    models.DatasetExampleRevision.dataset_version_id,
+                    models.ExperimentRun.dataset_example_id,
+                    models.DatasetExampleRevision.output["GROUND_TRUTH"].label(
+                        "reference"
+                    ),
+                    models.ExperimentRun.output["task_output"].label("output"),
+                )
+                .select_from(models.ExperimentRun)
+                .join(
+                    models.DatasetExampleRevision,
+                    models.ExperimentRun.dataset_example_id
+                    == models.DatasetExampleRevision.dataset_example_id,
+                    isouter=True,
+                )
+                .where(models.ExperimentRun.experiment_id == experiment_id)
+            )
+
+            if start_time:
+                stmt = stmt.where(start_time <= models.ExperimentRun.start_time)
+            if end_time:
+                stmt = stmt.where(models.ExperimentRun.start_time < end_time)
+            if filter_condition:
+                sf = SpanFilter(filter_condition)
+                stmt = sf(stmt)
+
+            results = []
+            data = await session.stream(stmt)
+
+            async for dataset_version_id, dataset_example_id, reference, output in data:
+                if reference is not None and output is not None:
+                    results.append(
+                        {
+                            "dataset_version_id": dataset_version_id,
+                            "dataset_example_id": dataset_example_id,
+                            "reference": reference,
+                            "output": output,
+                        }
+                    )
+
+            if not results:
+                return None
+
+            # Converter para DataFrame
+            df = pd.DataFrame(results)
+
+            # Processar os dados seguindo a abordagem original
+            return self._compute_metrics_with_sklearn(df)
+
+        except Exception as e:
+            print(f"Error calculating experiment metrics: {traceback.format_exc()}")
             return None
 
     def _compute_metrics_with_sklearn(self, data: pd.DataFrame) -> Dict[str, float]:

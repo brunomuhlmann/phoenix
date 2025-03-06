@@ -8,17 +8,17 @@ services:
     ports:
       - 6006:6006
       - 4317:4317
+    env_file:
+      - .env
     environment:
-      - PHOENIX_SQL_DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+      - PHOENIX_SQL_DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
   db:
-    image: postgres:16
+    image: postgres
     restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=postgres
+    env_file:
+      - .env
     ports:
-      - 5432
+      - ${POSTGRES_PORT}
     volumes:
       - database_data:/var/lib/postgresql/data
 volumes:

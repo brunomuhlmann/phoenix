@@ -13,6 +13,8 @@
 - Updated the `schema.graphql` file to include the classification metrics in the `Experiment` type
 - Adapted the `Experiment` type to include classification metrics
 - Adapted the classification metrics dataloader to work with the `Experiment` type input
+- Adapted the docker-compose file to use the variables from the .env file
+- Node version changed to 22-slim for the frontend-builder stage in the Dockerfile
 
 ## Forked (2025-02-27)
 

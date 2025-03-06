@@ -47,3 +47,8 @@ examples/agent_framework_comparison/utils/saved_traces/*.parquet
 
 # Caches
 .pnpm-store
+
+# Dev custom files
+custom_scripts/
+docker-compose-custom.yml
+Dockerfile.custom

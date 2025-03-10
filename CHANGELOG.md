@@ -16,6 +16,9 @@
 - Adapted the docker-compose file to use the variables from the .env file
 - Node version changed to 22-slim for the frontend-builder stage in the Dockerfile
 
+### Fixed
+- Docker compose file default definition
+
 ## Forked (2025-02-27)
 
 ## [7.9.3](https://github.com/Arize-ai/phoenix/compare/arize-phoenix-v7.9.2...arize-phoenix-v7.9.3) (2025-01-30)

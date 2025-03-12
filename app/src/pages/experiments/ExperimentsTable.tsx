@@ -179,6 +179,7 @@ export function ExperimentsTable({
           }}
         />
       ),
+      enableSorting: false,
     },
     {
       header: "name",
@@ -230,6 +231,10 @@ export function ExperimentsTable({
         id: `annotation-${annotationName}`,
         meta: {
           textAlign: "right",
+        },
+        accessorFn: (row) => {
+          const annotation = row.annotationSummaryMap[annotationName];
+          return annotation?.meanScore ?? null;
         },
         cell: ({ row }) => {
           const annotation = row.original.annotationSummaryMap[annotationName];
@@ -287,7 +292,6 @@ export function ExperimentsTable({
             />
           </div>
         </TriggerWrap>
-        // return <span css={css`float: right;`}>{(value * 100).toFixed(1)}%</span>;
       }
     },
     {
@@ -320,7 +324,6 @@ export function ExperimentsTable({
             />
           </div>
         </TriggerWrap>
-        // return <span css={css`float: right;`}>{(value * 100).toFixed(1)}%</span>;
       }
     },
     {
@@ -353,7 +356,6 @@ export function ExperimentsTable({
             />
           </div>
         </TriggerWrap>
-        // return <span css={css`float: right;`}>{(value * 100).toFixed(1)}%</span>;
       }
     },
     {
@@ -433,6 +435,7 @@ export function ExperimentsTable({
           />
         );
       },
+      enableSorting: false,
     },
   ];
   const table = useReactTable<TableRow>({
@@ -473,7 +476,9 @@ export function ExperimentsTable({
     },
     [hasNext, isLoadingNext, loadNext]
   );
+  
   const navigate = useNavigate();
+
   return (
     <div
       css={css`
@@ -512,7 +517,7 @@ export function ExperimentsTable({
                         {{
                           asc: '▲',
                           desc: '▼',
-                        }[header.column.getIsSorted() as string] ?? null}
+                        }[header.column.getIsSorted() as string] ?? '▲│▼'}
                       </span>
                     </div>
                   </th>

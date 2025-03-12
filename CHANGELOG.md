@@ -20,6 +20,7 @@
 
 ### Fixed
 - Docker compose file default definition
+- Sorting for annotations columns is now working in experiments table
 
 ## Forked (2025-02-27)
 

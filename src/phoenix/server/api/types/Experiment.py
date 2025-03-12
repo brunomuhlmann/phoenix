@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import ClassVar, Optional
 
 import strawberry
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import joinedload
 from strawberry import UNSET, Private
 from strawberry.relay import Connection, Node, NodeID
@@ -145,6 +145,23 @@ class Experiment(Node):
             )
         )
         return latency_seconds * 1000 if latency_seconds is not None else None
+
+    @strawberry.field
+    async def latency_ms_stdev(self, info: Info[Context, None]) -> Optional[float]:
+        experiment_id = self.id_attr
+
+        async with info.context.db() as session:
+            result = await session.scalar(
+                select(
+                    func.stddev(
+                        func.extract("EPOCH", models.ExperimentRun.end_time)
+                        - func.extract("EPOCH", models.ExperimentRun.start_time)
+                    )
+                    * 1000
+                ).where(models.ExperimentRun.experiment_id == experiment_id)
+            )
+
+        return result
 
     @strawberry.field
     async def project(self, info: Info[Context, None]) -> Optional[Project]:

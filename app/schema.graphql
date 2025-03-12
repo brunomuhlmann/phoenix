@@ -820,6 +820,7 @@ type Experiment implements Node {
   annotationSummaries: [ExperimentAnnotationSummary!]!
   errorRate: Float
   averageRunLatencyMs: Float
+  latencyMsStdev: Float
   project: Project
   lastUpdatedAt: DateTime
 }

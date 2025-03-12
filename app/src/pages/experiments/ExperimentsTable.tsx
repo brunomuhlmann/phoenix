@@ -117,6 +117,7 @@ export function ExperimentsTable({
                 errorRate
                 runCount
                 averageRunLatencyMs
+                latencyMsStdev
                 project {
                   id
                 }
@@ -377,6 +378,20 @@ export function ExperimentsTable({
     {
       header: "avg latency",
       accessorKey: "averageRunLatencyMs",
+      meta: {
+        textAlign: "right",
+      },
+      cell: ({ getValue }) => {
+        const value = getValue();
+        if (value === null || typeof value !== "number") {
+          return "--";
+        }
+        return <LatencyText latencyMs={value} />;
+      },
+    },
+    {
+      header: "stdev latency",
+      accessorKey: "latencyMsStdev",
       meta: {
         textAlign: "right",
       },

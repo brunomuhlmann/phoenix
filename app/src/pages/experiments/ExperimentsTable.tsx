@@ -5,6 +5,8 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
+  SortingState,
   useReactTable,
 } from "@tanstack/react-table";
 import { css } from "@emotion/react";
@@ -86,6 +88,7 @@ export function ExperimentsTable({
 }) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [rowSelection, setRowSelection] = useState({});
+  const [sorting, setSorting] = useState<SortingState>([]);
   const { data, loadNext, hasNext, isLoadingNext, refetch } =
     usePaginationFragment<ExperimentsTableQuery, ExperimentsTableFragment$key>(
       graphql`
@@ -436,10 +439,14 @@ export function ExperimentsTable({
     columns: [...baseColumns, ...annotationColumns, ...tailColumns],
     data: tableData,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     state: {
       rowSelection,
+      sorting,
     },
     onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
+    enableSorting: true,
   });
   const rows = table.getRowModel().rows;
   const selectedRows = table.getSelectedRowModel().rows;
@@ -479,24 +486,40 @@ export function ExperimentsTable({
     >
       <table css={selectableTableCSS}>
         <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  align={header.column.columnDef?.meta?.textAlign}
-                >
-                  <div>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    align={header.column.columnDef?.meta?.textAlign}
+                    // Adicionar cursor e onClick para ordenação
+                    css={css`
+                      cursor: ${header.column.getCanSort() ? 'pointer' : 'default'};
+                    `}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <div css={css`
+                      display: flex;
+                      align-items: center;
+                      justify-content: ${header.column.columnDef?.meta?.textAlign === 'right' ? 'flex-end' : 'flex-start'};
+                    `}>
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                      {/* Adicionar indicador de ordenação */}
+                      <span css={css`margin-left: 4px;`}>
+                        {{
+                          asc: '▲',
+                          desc: '▼',
+                        }[header.column.getIsSorted() as string] ?? null}
+                      </span>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
         {isEmpty ? (
           <ExperimentsTableEmpty />
         ) : (

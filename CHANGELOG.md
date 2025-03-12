@@ -4,6 +4,7 @@
 ### Added
 - New dataloader for classification metrics (precision, recall, f1, support)
 - Standard deviation for run latency in experiments table
+- Sorting feature in experiments table
 
 ### Changed
 - Updated the `ProjectPageHeader` component to display classification metrics

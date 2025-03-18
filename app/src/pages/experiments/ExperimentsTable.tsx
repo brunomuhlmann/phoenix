@@ -89,6 +89,9 @@ export function ExperimentsTable({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [rowSelection, setRowSelection] = useState({});
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnResizeMode, setColumnResizeMode] = useState('onChange');
+  const [columnResizing, setColumnResizing] = useState({});
+  
   const { data, loadNext, hasNext, isLoadingNext, refetch } =
     usePaginationFragment<ExperimentsTableQuery, ExperimentsTableFragment$key>(
       graphql`
@@ -180,17 +183,22 @@ export function ExperimentsTable({
         />
       ),
       enableSorting: false,
+      size: 40,
+      minSize: 40,
+      maxSize: 40,
+      enableResizing: false,
     },
     {
       header: "name",
       accessorKey: "name",
       minSize: 200,
+      size: 250,
       cell: ({ getValue, row }) => {
         const experimentId = row.original.id;
         const sequenceNumber = row.original.sequenceNumber;
         return (
           <Flex direction="row" gap="size-100" alignItems="center">
-            <SequenceNumberLabel sequenceNumber={sequenceNumber} />
+            {/* <SequenceNumberLabel sequenceNumber={sequenceNumber} /> */}
             <Link
               to={`/datasets/${dataset.id}/compare?experimentId=${experimentId}`}
             >
@@ -199,17 +207,23 @@ export function ExperimentsTable({
           </Flex>
         );
       },
+      enableResizing: true,
     },
     {
       header: "description",
       accessorKey: "description",
-      minSize: 300,
+      minSize: 200,
+      size: 300,
       cell: TextCell,
+      enableResizing: true,
     },
     {
       header: "created at",
       accessorKey: "createdAt",
+      size: 180,
+      minSize: 120,
       cell: TimestampCell,
+      enableResizing: true,
     },
   ];
   const annotationColumns: ColumnDef<TableRow>[] =
@@ -258,6 +272,9 @@ export function ExperimentsTable({
             />
           );
         },
+        size: 160,
+        minSize: 120,
+        enableResizing: true,
       };
     });
 
@@ -292,7 +309,10 @@ export function ExperimentsTable({
             />
           </div>
         </TriggerWrap>
-      }
+      },
+      size: 120,
+      minSize: 100,
+      enableResizing: true,
     },
     {
       header: "Precision",
@@ -324,7 +344,10 @@ export function ExperimentsTable({
             />
           </div>
         </TriggerWrap>
-      }
+      },
+      size: 120,
+      minSize: 100,
+      enableResizing: true,
     },
     {
       header: "Recall",
@@ -356,7 +379,10 @@ export function ExperimentsTable({
             />
           </div>
         </TriggerWrap>
-      }
+      },
+      size: 120,
+      minSize: 100,
+      enableResizing: true,
     },
     {
       header: "Support",
@@ -370,7 +396,10 @@ export function ExperimentsTable({
           return <span css={css`float: right;`}>--</span>;
         }
         return <span css={css`float: right;`}>{value.toLocaleString()}</span>;
-      }
+      },
+      size: 120,
+      minSize: 100,
+      enableResizing: true,
     },
     {
       header: "run count",
@@ -379,6 +408,9 @@ export function ExperimentsTable({
         textAlign: "right",
       },
       cell: IntCell,
+      size: 120,
+      minSize: 100,
+      enableResizing: true,
     },
     {
       header: "avg latency",
@@ -393,6 +425,9 @@ export function ExperimentsTable({
         }
         return <LatencyText latencyMs={value} />;
       },
+      size: 120,
+      minSize: 100,
+      enableResizing: true,
     },
     {
       header: "stdev latency",
@@ -407,6 +442,9 @@ export function ExperimentsTable({
         }
         return <LatencyText latencyMs={value} />;
       },
+      size: 120,
+      minSize: 100,
+      enableResizing: true,
     },
     {
       header: "error rate",
@@ -415,12 +453,17 @@ export function ExperimentsTable({
         textAlign: "right",
       },
       cell: ErrorRateCell,
+      size: 120,
+      minSize: 100,
+      enableResizing: true,
     },
     {
       header: "metadata",
       accessorKey: "metadata",
       minSize: 200,
+      size: 250,
       cell: CompactJSONCell,
+      enableResizing: true,
     },
     {
       id: "actions",
@@ -436,6 +479,9 @@ export function ExperimentsTable({
         );
       },
       enableSorting: false,
+      size: 60,
+      minSize: 40,
+      enableResizing: false,
     },
   ];
   const table = useReactTable<TableRow>({
@@ -443,13 +489,17 @@ export function ExperimentsTable({
     data: tableData,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    columnResizeMode: columnResizeMode as any,
+    onColumnResizingChange: setColumnResizing,
     state: {
       rowSelection,
       sorting,
+      columnResizing,
     },
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     enableSorting: true,
+    enableColumnResizing: true,
   });
   const rows = table.getRowModel().rows;
   const selectedRows = table.getSelectedRowModel().rows;
@@ -484,12 +534,59 @@ export function ExperimentsTable({
       css={css`
         flex: 1 1 auto;
         overflow: auto;
-        width: table.getTotalSize();
+        width: ${table.getTotalSize()}px;
       `}
       ref={tableContainerRef}
       onScroll={(e) => fetchMoreOnBottomReached(e.target as HTMLDivElement)}
     >
-      <table css={selectableTableCSS}>
+      <table 
+        css={[
+          selectableTableCSS,
+          css`
+            width: ${table.getTotalSize()}px;
+            
+            th {
+              position: relative;
+              user-select: none;
+            }
+            
+            .resizer {
+              position: absolute;
+              right: 0;
+              top: 0;
+              height: 100%;
+              width: 5px;
+              background: rgba(0, 0, 0, 0.05);
+              cursor: col-resize;
+              user-select: none;
+              touch-action: none;
+              
+              &.isResizing {
+                background: rgba(0, 0, 0, 0.2);
+                opacity: 1;
+              }
+              
+              &:hover {
+                background: rgba(0, 0, 0, 0.1);
+              }
+            }
+            
+            /* Aplicar apenas quando estiver redimensionando */
+            &.resizing {
+              cursor: col-resize;
+              * {
+                cursor: col-resize !important;
+                user-select: none !important;
+              }
+            }
+          `,
+        ]}
+        {...{
+          style: {
+            width: table.getTotalSize(),
+          },
+        }}
+      >
         <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -497,11 +594,16 @@ export function ExperimentsTable({
                   <th
                     key={header.id}
                     align={header.column.columnDef?.meta?.textAlign}
-                    // Adicionar cursor e onClick para ordenação
                     css={css`
                       cursor: ${header.column.getCanSort() ? 'pointer' : 'default'};
+                      width: ${header.getSize()}px;
+                      min-width: ${header.column.columnDef.minSize}px;
+                      max-width: ${header.column.columnDef.maxSize ?? "none"};
                     `}
                     onClick={header.column.getToggleSortingHandler()}
+                    style={{
+                      width: header.getSize(),
+                    }}
                   >
                     <div css={css`
                       display: flex;
@@ -517,9 +619,18 @@ export function ExperimentsTable({
                         {{
                           asc: '▲',
                           desc: '▼',
-                        }[header.column.getIsSorted() as string] ?? '▲│▼'}
+                        }[header.column.getIsSorted() as string] ?? ''}
                       </span>
                     </div>
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        className={`resizer ${
+                          header.column.getIsResizing() ? 'isResizing' : ''
+                        }`}
+                      />
+                    )}
                   </th>
                 ))}
               </tr>
@@ -540,7 +651,15 @@ export function ExperimentsTable({
               >
                 {row.getVisibleCells().map((cell) => {
                   return (
-                    <td key={cell.id}>
+                    <td 
+                      key={cell.id}
+                      css={css`
+                        width: ${cell.column.getSize()}px;
+                      `}
+                      style={{
+                        width: cell.column.getSize(),
+                      }}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

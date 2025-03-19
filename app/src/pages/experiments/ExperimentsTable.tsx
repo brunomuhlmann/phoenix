@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { graphql, usePaginationFragment } from "react-relay";
 import { useNavigate } from "react-router";
 import {
@@ -18,7 +18,7 @@ import {
   TriggerWrap,
 } from "@arizeai/components";
 
-import { Flex, Heading, Link, Text, View } from "@phoenix/components";
+import { Flex, Heading, Link, Loading, Text, View } from "@phoenix/components";
 import { AnnotationColorSwatch } from "@phoenix/components/annotation";
 import { SequenceNumberLabel } from "@phoenix/components/experiment";
 import { ExperimentActionMenu } from "@phoenix/components/experiment/ExperimentActionMenu";
@@ -669,6 +669,22 @@ export function ExperimentsTable({
                 })}
               </tr>
             ))}
+            {isLoadingNext && (
+              <tr>
+                <td 
+                  colSpan={table.getAllColumns().length} 
+                  css={css`
+                    text-align: center; 
+                    padding: var(--ac-global-dimension-size-200);
+                  `}
+                >
+                  <Flex direction="row" alignItems="center" justifyContent="center" gap="size-100">
+                    <Loading size="S" />
+                    <Text>Loading more experiments...</Text>
+                  </Flex>
+                </td>
+              </tr>
+            )}
           </tbody>
         )}
       </table>

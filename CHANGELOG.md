@@ -6,6 +6,8 @@
 - Standard deviation for run latency in experiments table
 - Sorting feature in experiments table
 - Resizing columns in experiments table
+- Cache for ClassificationMetricsDataLoader
+- Loading indicator for experiments table
 
 ### Changed
 - Updated the `ProjectPageHeader` component to display classification metrics

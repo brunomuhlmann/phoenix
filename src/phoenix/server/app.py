@@ -662,10 +662,13 @@ def create_graphql_router(
                 project_by_name=ProjectByNameDataLoader(db),
                 users=UsersDataLoader(db),
                 user_roles=UserRolesDataLoader(db),
-                # Adicione o novo dataloader aqui
                 classification_metrics=ClassificationMetricsDataLoader(
                     db,
-                    cache_map=None,
+                    cache_map=(
+                        cache_for_dataloaders.classification_metrics
+                        if cache_for_dataloaders
+                        else None
+                    ),
                 ),
             ),
             cache_for_dataloaders=cache_for_dataloaders,
@@ -817,9 +820,12 @@ def create_app(
     initial_batch_of_evaluations = (
         () if initial_evaluations is None else initial_evaluations
     )
-    cache_for_dataloaders = (
-        CacheForDataLoaders() if db.dialect is SupportedSQLDialect.SQLITE else None
-    )
+
+    # cache_for_dataloaders = (
+    #     CacheForDataLoaders() if db.dialect is SupportedSQLDialect.SQLITE else None
+    # )
+    cache_for_dataloaders = CacheForDataLoaders()
+
     last_updated_at = LastUpdatedAt()
     middlewares: list[Middleware] = [Middleware(HeadersMiddleware)]
     middlewares.extend(user_fastapi_middlewares())

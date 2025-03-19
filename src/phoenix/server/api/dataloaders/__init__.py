@@ -2,7 +2,10 @@ from dataclasses import dataclass, field
 
 from .annotation_summaries import AnnotationSummaryCache, AnnotationSummaryDataLoader
 from .average_experiment_run_latency import AverageExperimentRunLatencyDataLoader
-from .classification_metrics import ClassificationMetricsDataLoader
+from .classification_metrics import (
+    ClassificationMetricsCache,
+    ClassificationMetricsDataLoader,
+)
 from .dataset_example_revisions import DatasetExampleRevisionsDataLoader
 from .dataset_example_spans import DatasetExampleSpansDataLoader
 from .document_evaluation_summaries import (
@@ -93,4 +96,7 @@ class CacheForDataLoaders:
     )
     token_count: TokenCountCache = field(
         default_factory=TokenCountCache,
+    )
+    classification_metrics: ClassificationMetricsCache = field(
+        default_factory=ClassificationMetricsCache
     )

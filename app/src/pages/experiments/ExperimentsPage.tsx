@@ -45,7 +45,7 @@ export function ExperimentsPage() {
     return (
       <Flex direction="column" alignItems="center" justifyContent="center" height="100%" padding="size-400">
         <Loading size="L" />
-        <Text marginTop="size-200">Carregando métricas de experimentos...</Text>
+        <Text marginTop="size-200">Loading experiments...</Text>
       </Flex>
     );
   }

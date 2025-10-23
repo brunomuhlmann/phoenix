@@ -11,6 +11,10 @@ from strawberry.types import Info
 
 from phoenix.db import models
 from phoenix.server.api.context import Context
+from phoenix.server.api.types.ClassificationMetrics import (
+    ClassificationReport,
+    build_classification_report,
+)
 from phoenix.server.api.types.ExperimentAnnotationSummary import (
     ExperimentAnnotationSummary,
 )
@@ -106,6 +110,37 @@ class Experiment(Node):
         return await info.context.data_loaders.classification_metrics.load(
             (project_id, None, None, metric.value)
         )
+
+    @strawberry.field
+    async def classification_report(
+        self,
+        info: Info[Context, None],
+    ) -> Optional[ClassificationReport]:
+        """Get full classification report with per-class metrics for experiment."""
+        # Obter o project_id associado a este experimento
+        project_id = None
+        if self.project_name:
+            project = await info.context.data_loaders.project_by_name.load(
+                self.project_name
+            )
+            if project:
+                project_id = project.id
+
+        # Se não conseguirmos um project_id, retornar None
+        if project_id is None:
+            return None
+
+        # Carregar as métricas completas do DataLoader
+        # Usamos experiment_id para métricas específicas deste experimento
+        metrics_data = await info.context.data_loaders.classification_metrics.load(
+            (project_id, None, None, "report", self.id_attr)
+        )
+
+        if not metrics_data:
+            return None
+
+        # Converter dados do DataLoader para tipos GraphQL
+        return build_classification_report(metrics_data)
 
     @strawberry.field
     async def run_count(self, info: Info[Context, None]) -> int:

@@ -1,6 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { graphql, usePaginationFragment } from "react-relay";
-import { useNavigate } from "react-router";
+import { css } from "@emotion/react";
 import {
   ColumnDef,
   flexRender,
@@ -9,7 +7,9 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
-import { css } from "@emotion/react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { graphql, usePaginationFragment } from "react-relay";
+import { useNavigate } from "react-router";
 
 import {
   HelpTooltip,
@@ -20,7 +20,9 @@ import {
 
 import { Flex, Heading, Link, Loading, Text, View } from "@phoenix/components";
 import { AnnotationColorSwatch } from "@phoenix/components/annotation";
-import { SequenceNumberLabel } from "@phoenix/components/experiment";
+import {
+  ClassificationReportTooltip
+} from "@phoenix/components/experiment";
 import { ExperimentActionMenu } from "@phoenix/components/experiment/ExperimentActionMenu";
 import { CompactJSONCell, IntCell } from "@phoenix/components/table";
 import { IndeterminateCheckboxCell } from "@phoenix/components/table/IndeterminateCheckboxCell";
@@ -33,6 +35,7 @@ import {
   floatFormatter,
   formatPercent,
 } from "@phoenix/utils/numberFormatUtils";
+
 
 import { RunExperimentButton } from "../dataset/RunExperimentButton";
 
@@ -120,6 +123,23 @@ export function ExperimentsTable({
                 precision: classificationMetric(metric: PRECISION)
                 recall: classificationMetric(metric: RECALL)
                 support: classificationMetric(metric: SUPPORT)
+                classificationReport {
+                  weightedAvg {
+                    precision
+                    recall
+                    f1
+                    support
+                  }
+                  perClass {
+                    className
+                    metrics {
+                      precision
+                      recall
+                      f1
+                      support
+                    }
+                  }
+                }
                 errorRate
                 runCount
                 averageRunLatencyMs
@@ -285,30 +305,33 @@ export function ExperimentsTable({
       meta: {
         textAlign: "right",
       },
-      cell: ({ getValue }) => {
+      cell: ({ getValue, row }) => {
         const value = getValue();
         const color = getColor(parseFloat(value as string));
         if (value === null || typeof value !== "number") {
           return <span css={css`float: right;`}>--</span>;
         }
-        return <TriggerWrap>
-          <div
-            css={css`
-            float: right;
-            --mod-barloader-fill-color: ${color};
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: var(--ac-global-dimension-size-100);
-          `}
+        return (
+          <ClassificationReportTooltip
+            classificationReport={row.original.classificationReport}
+            experimentName={row.original.name}
+            metricKey="f1"
           >
-            {(value * 100).toFixed(1)}%
-            <ProgressBar
-              width="40px"
-              value={value * 100}
-            />
-          </div>
-        </TriggerWrap>
+            <div
+              css={css`
+                float: right;
+                --mod-barloader-fill-color: ${color};
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: var(--ac-global-dimension-size-100);
+              `}
+            >
+              {(value * 100).toFixed(1)}%
+              <ProgressBar width="40px" value={value * 100} />
+            </div>
+          </ClassificationReportTooltip>
+        );
       },
       size: 120,
       minSize: 50,
@@ -320,30 +343,33 @@ export function ExperimentsTable({
       meta: {
         textAlign: "right",
       },
-      cell: ({ getValue }) => {
+      cell: ({ getValue, row }) => {
         const value = getValue();
         const color = getColor(parseFloat(value as string));
         if (value === null || typeof value !== "number") {
           return <span css={css`float: right;`}>--</span>;
         }
-        return <TriggerWrap>
-          <div
-            css={css`
-            float: right;
-            --mod-barloader-fill-color: ${color};
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: var(--ac-global-dimension-size-100);
-          `}
+        return (
+          <ClassificationReportTooltip
+            classificationReport={row.original.classificationReport}
+            experimentName={row.original.name}
+            metricKey="precision"
           >
-            {(value * 100).toFixed(1)}%
-            <ProgressBar
-              width="40px"
-              value={value * 100}
-            />
-          </div>
-        </TriggerWrap>
+            <div
+              css={css`
+                float: right;
+                --mod-barloader-fill-color: ${color};
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: var(--ac-global-dimension-size-100);
+              `}
+            >
+              {(value * 100).toFixed(1)}%
+              <ProgressBar width="40px" value={value * 100} />
+            </div>
+          </ClassificationReportTooltip>
+        );
       },
       size: 120,
       minSize: 50,
@@ -355,30 +381,33 @@ export function ExperimentsTable({
       meta: {
         textAlign: "right",
       },
-      cell: ({ getValue }) => {
+      cell: ({ getValue, row }) => {
         const value = getValue();
         const color = getColor(parseFloat(value as string));
         if (value === null || typeof value !== "number") {
           return <span css={css`float: right;`}>--</span>;
         }
-        return <TriggerWrap>
-          <div
-            css={css`
-            float: right;
-            --mod-barloader-fill-color: ${color};
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: var(--ac-global-dimension-size-100);
-          `}
+        return (
+          <ClassificationReportTooltip
+            classificationReport={row.original.classificationReport}
+            experimentName={row.original.name}
+            metricKey="recall"
           >
-            {(value * 100).toFixed(1)}%
-            <ProgressBar
-              width="40px"
-              value={value * 100}
-            />
-          </div>
-        </TriggerWrap>
+            <div
+              css={css`
+                float: right;
+                --mod-barloader-fill-color: ${color};
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: var(--ac-global-dimension-size-100);
+              `}
+            >
+              {(value * 100).toFixed(1)}%
+              <ProgressBar width="40px" value={value * 100} />
+            </div>
+          </ClassificationReportTooltip>
+        );
       },
       size: 120,
       minSize: 50,
@@ -390,12 +419,20 @@ export function ExperimentsTable({
       meta: {
         textAlign: "right",
       },
-      cell: ({ getValue }) => {
+      cell: ({ getValue, row }) => {
         const value = getValue();
         if (value === null || typeof value !== "number") {
           return <span css={css`float: right;`}>--</span>;
         }
-        return <span css={css`float: right;`}>{value.toLocaleString()}</span>;
+        return (
+          <ClassificationReportTooltip
+            classificationReport={row.original.classificationReport}
+            experimentName={row.original.name}
+            metricKey="support"
+          >
+            <span css={css`float: right;`}>{value.toLocaleString()}</span>
+          </ClassificationReportTooltip>
+        );
       },
       size: 120,
       minSize: 50,

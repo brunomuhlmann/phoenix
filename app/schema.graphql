@@ -816,6 +816,8 @@ type Experiment implements Node {
     metric: MetricType!
   ): Float
 
+  classificationReport: ClassificationReport
+
   runCount: Int!
   annotationSummaries: [ExperimentAnnotationSummary!]!
   errorRate: Float
@@ -1924,3 +1926,20 @@ enum VectorDriftMetric {
 
 """Represents NULL values"""
 scalar Void
+
+type ClassMetrics {
+  precision: Float!
+  recall: Float!
+  f1: Float!
+  support: Int!
+}
+
+type PerClassMetrics {
+  className: String!
+  metrics: ClassMetrics!
+}
+
+type ClassificationReport {
+  weightedAvg: ClassMetrics!
+  perClass: [PerClassMetrics!]!
+}

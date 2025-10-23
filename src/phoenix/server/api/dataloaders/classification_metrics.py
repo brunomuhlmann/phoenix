@@ -19,7 +19,7 @@ from phoenix.server.api.input_types.TimeRange import TimeRange
 from phoenix.server.types import DbSessionFactory
 from phoenix.trace.dsl import SpanFilter
 
-MetricType: TypeAlias = Literal["precision", "recall", "f1", "support"]
+MetricType: TypeAlias = Literal["precision", "recall", "f1", "support", "report"]
 ProjectRowId: TypeAlias = int
 TimeInterval: TypeAlias = tuple[Optional[datetime], Optional[datetime]]
 FilterCondition: TypeAlias = Optional[str]
@@ -31,7 +31,7 @@ Param: TypeAlias = tuple[ProjectRowId, MetricType]
 Key: TypeAlias = tuple[
     ProjectRowId, Optional[TimeRange], FilterCondition, MetricType, Optional[int]
 ]
-Result: TypeAlias = Optional[MetricValue]
+Result: TypeAlias = Optional[Any]
 ResultPosition: TypeAlias = int
 DEFAULT_VALUE: Result = None
 
@@ -84,22 +84,20 @@ class ClassificationMetricsDataLoader(DataLoader[Key, Result]):
         self._db = db
 
     async def _load_fn(self, keys: list[Key]) -> list[Result]:
-        results: list[Result] = [DEFAULT_VALUE] * len(keys)
+        results: list[Any] = [DEFAULT_VALUE] * len(keys)
         arguments: defaultdict[
             Segment,
             defaultdict[Param, list[ResultPosition]],
         ] = defaultdict(lambda: defaultdict(list))
 
         for position, key in enumerate(keys):
-            if len(key) == 4:
-                # Formato antigo: (project_id, time_range, filter_condition, metric_type)
-                project_id, time_range, filter_condition, metric_type = key
-                experiment_id = None
-            else:
-                # Novo formato: (project_id, time_range, filter_condition, metric_type, experiment_id)
+            experiment_id = None
+            if len(key) == 5:
                 project_id, time_range, filter_condition, metric_type, experiment_id = (
                     key
                 )
+            else:
+                project_id, time_range, filter_condition, metric_type = key
 
             segment = (
                 (
@@ -130,6 +128,19 @@ class ClassificationMetricsDataLoader(DataLoader[Key, Result]):
                     metric_type,
                     experiment_id,
                 ), positions in by_experiment.items():
+                    if metric_type == "report":
+                        if experiment_id is not None:
+                            metrics = await self._calculate_experiment_metrics(
+                                session, experiment_id, segment
+                            )
+                        else:
+                            metrics = await self._calculate_classification_metrics(
+                                session, project_id, segment
+                            )
+                        for position in positions:
+                            results[position] = metrics if metrics else None
+                        continue
+
                     # Se experiment_id for fornecido, calcular métricas para esse experimento específico
                     if experiment_id is not None:
                         metrics = await self._calculate_experiment_metrics(
@@ -149,7 +160,7 @@ class ClassificationMetricsDataLoader(DataLoader[Key, Result]):
 
     async def _calculate_classification_metrics(
         self, session: Any, project_id: int, segment: Segment
-    ) -> Optional[Dict[str, float]]:
+    ) -> Optional[Dict[str, Any]]:
         """Calculate precision, recall, and F1 score for project executions."""
         try:
             # Get the data required for metric calculation
@@ -225,7 +236,7 @@ class ClassificationMetricsDataLoader(DataLoader[Key, Result]):
 
     async def _calculate_experiment_metrics(
         self, session: Any, experiment_id: int, segment: Segment
-    ) -> Optional[Dict[str, float]]:
+    ) -> Optional[Dict[str, Any]]:
         """Calculate classification metrics for a specific experiment."""
         try:
             # Obter os dados necessários para o cálculo da métrica
@@ -285,8 +296,12 @@ class ClassificationMetricsDataLoader(DataLoader[Key, Result]):
             print(f"Error calculating experiment metrics: {traceback.format_exc()}")
             return None
 
-    def _compute_metrics_with_sklearn(self, data: pd.DataFrame) -> Dict[str, float]:
-        """Compute metrics using sklearn, following the original code approach."""
+    def _compute_metrics_with_sklearn(self, data: pd.DataFrame) -> Dict[str, Any]:
+        """Compute metrics using sklearn, following the original code approach.
+
+        Returns a dictionary with both weighted avg metrics (for backward compatibility)
+        and the full per-class classification report.
+        """
         try:
             # Process reference data using literal_eval as in original code
             data["reference"] = data.reference.apply(
@@ -333,18 +348,64 @@ class ClassificationMetricsDataLoader(DataLoader[Key, Result]):
                 output_dict=True,
             )
 
-            # Extract the metrics from the weighted avg
+            # Build the full report with both weighted avg and per-class metrics
+            result = {
+                # Keep weighted avg metrics at root level for backward compatibility
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0.0,
+                # Add full report structure
+                "weighted_avg": {},
+                "per_class": {},
+            }
+
+            # Extract weighted avg metrics
             if "weighted avg" in cr:
                 metrics = cr["weighted avg"]
-                return {
+                weighted = {
                     "precision": float(metrics["precision"]),
                     "recall": float(metrics["recall"]),
                     "f1": float(metrics["f1-score"]),
                     "support": float(metrics["support"]),
                 }
+                # Root level for backward compatibility
+                result.update(weighted)
+                # Also in weighted_avg key
+                result["weighted_avg"] = weighted
 
-            return {"precision": 0.0, "recall": 0.0, "f1": 0.0, "support": 0.0}
+            # Extract per-class metrics
+            # Skip aggregate metrics (accuracy, macro avg, weighted avg, samples avg)
+            skip_keys = {
+                "accuracy",
+                "macro avg",
+                "weighted avg",
+                "samples avg",
+                "micro avg",
+            }
+            for class_name, metrics in cr.items():
+                if class_name not in skip_keys and isinstance(metrics, dict):
+                    result["per_class"][class_name] = {
+                        "precision": float(metrics["precision"]),
+                        "recall": float(metrics["recall"]),
+                        "f1": float(metrics["f1-score"]),
+                        "support": int(metrics["support"]),
+                    }
+
+            return result
 
         except:
             print(f"Error in sklearn metrics computation: {traceback.format_exc()}")
-            return {"precision": 0.0, "recall": 0.0, "f1": 0.0, "support": 0.0}
+            return {
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1": 0.0,
+                "support": 0.0,
+                "weighted_avg": {
+                    "precision": 0.0,
+                    "recall": 0.0,
+                    "f1": 0.0,
+                    "support": 0.0,
+                },
+                "per_class": {},
+            }

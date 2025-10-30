@@ -3,6 +3,7 @@ services:
     build:
       dockerfile: ./Dockerfile
       context: .
+    container_name: phoenix-app
     depends_on:
       - db
     ports:
@@ -10,17 +11,20 @@ services:
       - 4317:4317
     environment:
       - PHOENIX_SQL_DATABASE_URL=postgresql://postgres:postgres@db:5432/phoenix
+    restart: unless-stopped
   db:
-    image: postgres:16
+    image: postgres:17.4
+    container_name: phoenix-db
     restart: always
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=phoenix
     ports:
-      - 5432
+      - "5432:5432"
     volumes:
       - database_data:/var/lib/postgresql/data
+      
 volumes:
   database_data:
     driver: local

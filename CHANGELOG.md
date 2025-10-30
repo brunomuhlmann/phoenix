@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 ### Added
+- Toggle switch to show evaluators
+- Complete Classification Report tooltip hover
 - New dataloader for classification metrics (precision, recall, f1, support)
 - Standard deviation for run latency in experiments table
 - Sorting feature in experiments table
@@ -10,6 +12,8 @@
 - Loading indicator for experiments table
 
 ### Changed
+- Classification metrics columns order fixed
+- Reference compose file updated
 - Updated the `ProjectPageHeader` component to display classification metrics
 - Updated the `ProjectPage` component for compatibility
 - Updated the `schema.graphql` file to include the classification metrics

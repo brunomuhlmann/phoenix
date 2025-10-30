@@ -30,6 +30,7 @@ import { selectableTableCSS } from "@phoenix/components/table/styles";
 import { TextCell } from "@phoenix/components/table/TextCell";
 import { TimestampCell } from "@phoenix/components/table/TimestampCell";
 import { LatencyText } from "@phoenix/components/trace/LatencyText";
+import { useDatasetContext } from "@phoenix/contexts/DatasetContext";
 import { useWordColor } from "@phoenix/hooks/useWordColor";
 import {
   floatFormatter,
@@ -94,6 +95,9 @@ export function ExperimentsTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnResizeMode, setColumnResizeMode] = useState('onChange');
   const [columnResizing, setColumnResizing] = useState({});
+  const showEvaluatorColumns = useDatasetContext(
+    (state) => state.showEvaluatorColumns
+  );
 
   const { data, loadNext, hasNext, isLoadingNext, refetch } =
     usePaginationFragment<ExperimentsTableQuery, ExperimentsTableFragment$key>(
@@ -521,8 +525,19 @@ export function ExperimentsTable({
       enableResizing: false,
     },
   ];
+  
+  // Conditionally include evaluator columns based on toggle state
+  const columns = useMemo(
+    () => [
+      ...baseColumns,
+      ...(showEvaluatorColumns ? annotationColumns : []),
+      ...tailColumns,
+    ],
+    [baseColumns, annotationColumns, tailColumns, showEvaluatorColumns]
+  );
+  
   const table = useReactTable<TableRow>({
-    columns: [...baseColumns, ...annotationColumns, ...tailColumns],
+    columns,
     data: tableData,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),

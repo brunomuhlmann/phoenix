@@ -22,6 +22,9 @@ export async function datasetLoader(args: LoaderFunctionArgs) {
             description
             exampleCount
             experimentCount
+            experimentAnnotationSummaries {
+              annotationName
+            }
             latestVersions: versions(
               first: 1
               sort: { col: createdAt, dir: desc }

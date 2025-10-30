@@ -1,8 +1,8 @@
-import React, { Suspense, useCallback, useMemo } from "react";
-import { Outlet, useLoaderData, useLocation, useNavigate } from "react-router";
 import { css } from "@emotion/react";
+import { Suspense, useCallback, useMemo } from "react";
+import { Outlet, useLoaderData, useLocation, useNavigate } from "react-router";
 
-import { ActionMenu, Counter, Item, TabPane, Tabs } from "@arizeai/components";
+import { ActionMenu, Counter, Item, Switch, TabPane, Tabs } from "@arizeai/components";
 
 import {
   Button,
@@ -85,6 +85,12 @@ function DatasetPageContent({
   const refreshLatestVersion = useDatasetContext(
     (state) => state.refreshLatestVersion
   );
+  const showEvaluatorColumns = useDatasetContext(
+    (state) => state.showEvaluatorColumns
+  );
+  const setShowEvaluatorColumns = useDatasetContext(
+    (state) => state.setShowEvaluatorColumns
+  );
   const notifySuccess = useNotifySuccess();
 
   const navigate = useNavigate();
@@ -102,6 +108,8 @@ function DatasetPageContent({
   // Set the initial tab
   const location = useLocation();
   const initialIndex = location.pathname.includes("examples") ? 1 : 0;
+  const isExperimentsTab = !location.pathname.includes("examples");
+  const hasEvaluatorColumns = dataset.experimentAnnotationSummaries && dataset.experimentAnnotationSummaries.length > 0;
   return (
     <main css={mainCSS}>
       <View
@@ -186,6 +194,24 @@ function DatasetPageContent({
           name="Experiments"
           extra={<Counter>{dataset.experimentCount}</Counter>}
         >
+          {isExperimentsTab && hasEvaluatorColumns && (
+            <View
+              paddingStart="size-150"
+              paddingEnd="size-150"
+              paddingTop="size-50"
+              paddingBottom="size-200"
+            >
+              <Flex direction="row" justifyContent="end" alignItems="center">
+                <Switch
+                  labelPlacement="start"
+                  isSelected={showEvaluatorColumns}
+                  onChange={() => setShowEvaluatorColumns(!showEvaluatorColumns)}
+                >
+                  Show Evaluators
+                </Switch>
+              </Flex>
+            </View>
+          )}
           <Suspense>
             <Outlet />
           </Suspense>

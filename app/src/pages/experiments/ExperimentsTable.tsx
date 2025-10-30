@@ -300,44 +300,6 @@ export function ExperimentsTable({
 
   const tailColumns: ColumnDef<TableRow>[] = [
     {
-      header: "F1 Score",
-      accessorKey: "f1Score",
-      meta: {
-        textAlign: "right",
-      },
-      cell: ({ getValue, row }) => {
-        const value = getValue();
-        const color = getColor(parseFloat(value as string));
-        if (value === null || typeof value !== "number") {
-          return <span css={css`float: right;`}>--</span>;
-        }
-        return (
-          <ClassificationReportTooltip
-            classificationReport={row.original.classificationReport}
-            experimentName={row.original.name}
-            metricKey="f1"
-          >
-            <div
-              css={css`
-                float: right;
-                --mod-barloader-fill-color: ${color};
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-                gap: var(--ac-global-dimension-size-100);
-              `}
-            >
-              {(value * 100).toFixed(1)}%
-              <ProgressBar width="40px" value={value * 100} />
-            </div>
-          </ClassificationReportTooltip>
-        );
-      },
-      size: 120,
-      minSize: 50,
-      enableResizing: true,
-    },
-    {
       header: "Precision",
       accessorKey: "precision",
       meta: {
@@ -392,6 +354,44 @@ export function ExperimentsTable({
             classificationReport={row.original.classificationReport}
             experimentName={row.original.name}
             metricKey="recall"
+          >
+            <div
+              css={css`
+                float: right;
+                --mod-barloader-fill-color: ${color};
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: var(--ac-global-dimension-size-100);
+              `}
+            >
+              {(value * 100).toFixed(1)}%
+              <ProgressBar width="40px" value={value * 100} />
+            </div>
+          </ClassificationReportTooltip>
+        );
+      },
+      size: 120,
+      minSize: 50,
+      enableResizing: true,
+    },
+    {
+      header: "F1 Score",
+      accessorKey: "f1Score",
+      meta: {
+        textAlign: "right",
+      },
+      cell: ({ getValue, row }) => {
+        const value = getValue();
+        const color = getColor(parseFloat(value as string));
+        if (value === null || typeof value !== "number") {
+          return <span css={css`float: right;`}>--</span>;
+        }
+        return (
+          <ClassificationReportTooltip
+            classificationReport={row.original.classificationReport}
+            experimentName={row.original.name}
+            metricKey="f1"
           >
             <div
               css={css`

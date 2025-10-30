@@ -2,9 +2,9 @@ import { css } from "@emotion/react";
 import { ReactNode, useMemo } from "react";
 
 import {
-    HelpTooltip,
-    TooltipTrigger,
-    TriggerWrap,
+  HelpTooltip,
+  TooltipTrigger,
+  TriggerWrap,
 } from "@arizeai/components";
 
 import { Flex, Heading, Text } from "@phoenix/components";
